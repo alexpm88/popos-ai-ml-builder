@@ -1,0 +1,69 @@
+# Core AI/ML Python packages
+torch
+torchvision
+torchaudio
+tensorflow[and-cuda]
+scikit-learn
+numpy
+pandas
+matplotlib
+seaborn
+plotly
+scipy
+statsmodels
+
+# Data processing
+dask[complete]
+polars
+pyarrow
+fastparquet
+openpyxl
+xlsxwriter
+
+# Jupyter ecosystem
+jupyterlab
+jupyterlab-git
+jupyterlab-lsp
+jupyter-lsp-python
+ipykernel
+ipywidgets
+voila
+
+# MLOps tools
+mlflow
+wandb
+tensorboard
+dvc
+great-expectations
+
+# Deep learning extras
+transformers
+datasets
+accelerate
+gradio
+streamlit
+
+# Computer vision
+opencv-python
+Pillow
+albumentations
+imgaug
+
+# NLP libraries
+nltk
+spacy
+gensim
+textblob
+
+# Visualization
+bokeh
+altair
+holoviews
+datashader
+
+# Development tools
+black
+flake8
+mypy
+pytest
+jupyter-black
