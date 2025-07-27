@@ -7,7 +7,7 @@ Crea automáticamente un ISO personalizado de Pop!_OS con frameworks de AI/ML pr
 1. **Fork este repositorio**
 2. **Ve a Actions → "Build Pop!_OS AI/ML Custom ISO"**
 3. **Click "Run workflow"**
-4. **Espera 2-3 horas**
+4. **Espera 1.5-2 horas**
 5. **Descarga tu ISO personalizado**
 
 ## 📦 ¿Qué incluye?
@@ -78,28 +78,33 @@ sudo apt install debootstrap squashfs-tools xorriso wget
 ./build-local.sh clean
 \`\`\`
 
-## 📋 Estructura del proyecto
+## 📋 Estructura del proyecto (raíz)
 
 \`\`\`
 popos-ai-ml-builder/
-├── .github/workflows/     # GitHub Actions
-├── scripts/              # Scripts de personalización
-├── templates/            # Plantillas de usuario
-├── config/              # Configuración del ISO
-├── build-local.sh       # Constructor local
-└── README.md           # Esta documentación
+├── .github/workflows/build-iso.yml    # GitHub Actions
+├── customize-system.sh                # Personalización del sistema
+├── install-ai-packages.sh            # Instalación AI/ML
+├── verify-nvidia.sh                  # Verificación NVIDIA
+├── setup-ai-env.sh                   # Setup entorno usuario
+├── start-jupyter.sh                  # Iniciar JupyterLab
+├── ai-first-setup.desktop            # Autostart desktop
+├── iso-config.json                   # Configuración ISO
+├── package-list.txt                  # Lista de paquetes
+├── build-local.sh                    # Constructor local
+└── README.md                         # Documentación
 \`\`\`
 
 ## 🔧 Personalización
 
 ### Modificar paquetes AI/ML:
-Edita \`scripts/install-ai-packages.sh\`
+Edita \`install-ai-packages.sh\`
 
 ### Cambiar configuración del sistema:
-Edita \`scripts/customize-system.sh\`
+Edita \`customize-system.sh\`
 
 ### Personalizar entorno de usuario:
-Modifica archivos en \`templates/\`
+Modifica \`setup-ai-env.sh\` y \`start-jupyter.sh\`
 
 ## 📊 Especificaciones técnicas
 
@@ -112,6 +117,12 @@ Modifica archivos en \`templates/\`
 - **Tiempo de build**: ~1.5-2 horas (optimizado)
 
 ## ⚡ Optimizaciones
+
+### Estructura simplificada
+- ✅ Todos los archivos en la raíz del proyecto
+- ✅ Referencias de rutas actualizadas
+- ✅ Fácil navegación y mantenimiento
+- ✅ Scripts más simples de ejecutar
 
 ### Drivers NVIDIA preinstalados
 - ✅ La ISO base ya incluye drivers NVIDIA optimizados
