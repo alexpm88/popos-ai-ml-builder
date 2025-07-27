@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=AI/ML Environment Setup
+Comment=Configura el entorno AI/ML en el primer login
+Exec=gnome-terminal --wait -- bash -c "~/setup-ai-env.sh; echo 'Presiona Enter para continuar...'; read"
+Icon=applications-science
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+StartupNotify=true
+Categories=Development;Science;
