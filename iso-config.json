@@ -1,0 +1,63 @@
+{
+  "iso_info": {
+    "name": "Pop!_OS AI/ML Edition",
+    "version": "1.0",
+    "description": "Pop!_OS with pre-installed AI/ML frameworks",
+    "maintainer": "Community",
+    "build_date": "auto"
+  },
+  "base_iso": {
+    "version": "22.04",
+    "variant": "nvidia",
+    "build": "55",
+    "url_template": "https://iso.pop-os.org/{version}/amd64/nvidia/{build}/pop-os_{version}_amd64_nvidia_{build}.iso",
+    "nvidia_drivers_included": true,
+    "cuda_preinstalled": false
+  },
+  "ai_frameworks": {
+    "pytorch": {
+      "enabled": true,
+      "version": "latest",
+      "cuda_support": true
+    },
+    "tensorflow": {
+      "enabled": true,
+      "version": "latest",
+      "gpu_support": true
+    },
+    "scikit_learn": {
+      "enabled": true,
+      "version": "latest"
+    },
+    "transformers": {
+      "enabled": true,
+      "version": "latest"
+    }
+  },
+  "development_tools": {
+    "jupyterlab": {
+      "enabled": true,
+      "extensions": ["git", "lsp", "widgets"]
+    },
+    "docker": {
+      "enabled": true,
+      "compose": true
+    },
+    "vscode": {
+      "enabled": false,
+      "extensions": []
+    }
+  },
+  "mlops_tools": {
+    "mlflow": true,
+    "wandb": true,
+    "tensorboard": true,
+    "dvc": true
+  },
+  "system_config": {
+    "auto_setup": true,
+    "create_user_env": true,
+    "install_cuda": true,
+    "optimize_gpu": true
+  }
+}
