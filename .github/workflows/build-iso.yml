@@ -124,14 +124,58 @@ jobs:
             echo 'System customization completed'
           "
 
+      - name: 🔧 Fix permissions
+        run: |
+          cd iso-extract
+          echo "Fixing permissions..."
+          sudo chown -R $USER:$USER . || true
+          sudo chmod -R u+w casper/ || true
+          echo "Permissions fixed"
+
       - name: 📦 Rebuild filesystem
         run: |
           cd iso-extract
           echo "Rebuilding filesystem..."
-          sudo du -sx --block-size=1 custom-root | cut -f1 > casper/filesystem.size
+          
+          # Verificar permisos del directorio casper
+          echo "Checking casper directory permissions..."
+          ls -la casper/
+          
+          # Cambiar propietario si es necesario
+          sudo chown -R $USER:$USER casper/ || true
+          
+          # Calcular tamaño del filesystem
+          echo "Calculating filesystem size..."
+          FILESYSTEM_SIZE=$(sudo du -sx --block-size=1 custom-root | cut -f1)
+          echo "Filesystem size: $FILESYSTEM_SIZE bytes"
+          
+          # Escribir el tamaño al archivo
+          echo "$FILESYSTEM_SIZE" | sudo tee casper/filesystem.size > /dev/null
+          
+          # Verificar que el archivo se creó correctamente
+          echo "Filesystem size file created: $(cat casper/filesystem.size)"
+          
+          # Remover el filesystem anterior
+          echo "Removing old filesystem..."
           sudo rm -f casper/filesystem.squashfs
-          sudo mksquashfs custom-root casper/filesystem.squashfs -comp xz -b 1M
-          echo "Filesystem rebuilt successfully"
+          
+          # Crear nuevo filesystem squashfs
+          echo "Creating new squashfs filesystem (this may take several minutes)..."
+          sudo mksquashfs custom-root casper/filesystem.squashfs \
+            -comp xz \
+            -b 1M \
+            -Xbcj x86 \
+            -e boot \
+            -wildcards
+          
+          # Verificar resultado
+          if [ -f casper/filesystem.squashfs ]; then
+            echo "Filesystem rebuilt successfully"
+            echo "New filesystem size: $(ls -lh casper/filesystem.squashfs | awk '{print $5}')"
+          else
+            echo "Error: Failed to create filesystem.squashfs"
+            exit 1
+          fi
 
       - name: 🔥 Create final ISO
         run: |
