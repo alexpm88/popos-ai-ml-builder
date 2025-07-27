@@ -33,9 +33,20 @@ check_disk_space() {
 download_base_iso() {
     if [ ! -f "pop-os-base.iso" ]; then
         echo "📥 Descargando Pop!_OS base ISO..."
+        echo "🔗 URL: https://iso.pop-os.org/22.04/amd64/nvidia/55/pop-os_22.04_amd64_nvidia_55.iso"
         wget -O pop-os-base.iso "https://iso.pop-os.org/22.04/amd64/nvidia/55/pop-os_22.04_amd64_nvidia_55.iso"
+        
+        # Verificar que la descarga fue exitosa
+        if [ $? -eq 0 ] && [ -f "pop-os-base.iso" ]; then
+            echo "✅ Descarga completada exitosamente"
+            ls -lh pop-os-base.iso
+        else
+            echo "❌ Error en la descarga"
+            exit 1
+        fi
     else
         echo "✅ ISO base ya existe"
+        ls -lh pop-os-base.iso
     fi
 }
 
