@@ -61,8 +61,12 @@ build_iso() {
     # Preparar chroot
     echo "🔧 Preparando entorno chroot..."
     sudo cp /etc/resolv.conf custom-root/etc/resolv.conf
-    sudo cp ../scripts/*.sh custom-root/tmp/
-    sudo cp -r ../templates custom-root/tmp/
+    sudo cp ../customize-system.sh custom-root/tmp/
+    sudo cp ../install-ai-packages.sh custom-root/tmp/
+    sudo cp ../verify-nvidia.sh custom-root/tmp/
+    sudo cp ../setup-ai-env.sh custom-root/tmp/
+    sudo cp ../start-jupyter.sh custom-root/tmp/
+    sudo cp ../ai-first-setup.desktop custom-root/tmp/
     
     # Personalizar sistema
     echo "🤖 Personalizando sistema..."
@@ -72,10 +76,10 @@ build_iso() {
         bash /tmp/install-ai-packages.sh
         
         # Setup user templates
-        cp /tmp/templates/setup-ai-env.sh /etc/skel/
-        cp /tmp/templates/start-jupyter.sh /etc/skel/
+        cp /tmp/setup-ai-env.sh /etc/skel/
+        cp /tmp/start-jupyter.sh /etc/skel/
         mkdir -p /etc/skel/.config/autostart
-        cp /tmp/templates/ai-first-setup.desktop /etc/skel/.config/autostart/
+        cp /tmp/ai-first-setup.desktop /etc/skel/.config/autostart/
         chmod +x /etc/skel/setup-ai-env.sh
         chmod +x /etc/skel/start-jupyter.sh
         
