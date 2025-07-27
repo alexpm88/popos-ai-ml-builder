@@ -65,9 +65,9 @@ jobs:
       run: |
         echo "Downloading Pop!_OS ${{ github.event.inputs.iso_version || '22.04' }} NVIDIA ISO..."
         if [ "${{ github.event.inputs.iso_version || '22.04' }}" = "24.04" ]; then
-          wget -O pop-os-base.iso "https://iso.pop-os.org/24.04/amd64/nvidia/pop-os_24.04_amd64_nvidia.iso"
+          wget -O pop-os-base.iso "https://iso.pop-os.org/22.04/amd64/nvidia/55/pop-os_22.04_amd64_nvidia_55.iso"
         else
-          wget -O pop-os-base.iso "https://iso.pop-os.org/22.04/amd64/nvidia/2343/pop-os_22.04_amd64_nvidia_2343.iso"
+          wget -O pop-os-base.iso "https://iso.pop-os.org/22.04/amd64/nvidia/55/pop-os_22.04_amd64_nvidia_55.iso"
         fi
         
         echo "Verifying download..."
