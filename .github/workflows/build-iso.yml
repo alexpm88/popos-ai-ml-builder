@@ -1,0 +1,243 @@
+name: 🔥 Build Pop!_OS AI/ML Custom ISO
+
+on:
+  workflow_dispatch:
+    inputs:
+      iso_version:
+        description: 'Pop!_OS version to use'
+        required: true
+        default: '22.04'
+        type: choice
+        options:
+        - '22.04'
+        - '24.04'
+      include_extras:
+        description: 'Include extra AI tools (increases build time)'
+        required: false
+        default: true
+        type: boolean
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+
+env:
+  ISO_NAME: "Pop_OS_AI_ML_Edition"
+  BUILD_DATE: $(date +%Y%m%d)
+
+jobs:
+  build-iso:
+    name: 🏗️ Build Custom ISO
+    runs-on: ubuntu-22.04
+    timeout-minutes: 300  # 5 horas máximo
+    
+    steps:
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: 💾 Free up disk space
+      run: |
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /usr/local/lib/android
+        sudo rm -rf /opt/ghc
+        sudo rm -rf /opt/hostedtoolcache/CodeQL
+        sudo docker image prune --all --force
+        df -h
+        
+    - name: 🛠️ Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          debootstrap squashfs-tools xorriso isolinux syslinux-efi \
+          grub-pc-bin grub-efi-amd64-bin mtools dosfstools \
+          wget curl git rsync
+          
+    - name: 📊 Show system info
+      run: |
+        echo "=== System Information ==="
+        uname -a
+        df -h
+        free -h
+        nproc
+        
+    - name: 📥 Download base Pop!_OS ISO
+      run: |
+        echo "Downloading Pop!_OS ${{ github.event.inputs.iso_version || '22.04' }} NVIDIA ISO..."
+        if [ "${{ github.event.inputs.iso_version || '22.04' }}" = "24.04" ]; then
+          wget -O pop-os-base.iso "https://iso.pop-os.org/24.04/amd64/nvidia/pop-os_24.04_amd64_nvidia.iso"
+        else
+          wget -O pop-os-base.iso "https://iso.pop-os.org/22.04/amd64/nvidia/2343/pop-os_22.04_amd64_nvidia_2343.iso"
+        fi
+        
+        echo "Verifying download..."
+        ls -lh pop-os-base.iso
+        
+    - name: 🔧 Extract and prepare ISO
+      run: |
+        echo "Creating working directories..."
+        mkdir -p iso-extract mount-point custom-iso
+        
+        echo "Mounting base ISO..."
+        sudo mount -o loop pop-os-base.iso mount-point
+        
+        echo "Copying ISO contents..."
+        sudo cp -rT mount-point/ iso-extract/
+        sudo umount mount-point
+        
+        echo "Extracting filesystem..."
+        cd iso-extract
+        sudo unsquashfs casper/filesystem.squashfs
+        sudo mv squashfs-root custom-root
+        
+    - name: 🤖 Customize filesystem - Base system
+      run: |
+        echo "Preparing chroot environment..."
+        sudo cp /etc/resolv.conf iso-extract/custom-root/etc/resolv.conf
+        sudo cp scripts/customize-system.sh iso-extract/custom-root/tmp/
+        sudo cp scripts/install-ai-packages.sh iso-extract/custom-root/tmp/
+        sudo cp -r templates/ iso-extract/custom-root/tmp/
+        
+        echo "Starting base system customization..."
+        sudo chroot iso-extract/custom-root /bin/bash -c "
+          export DEBIAN_FRONTEND=noninteractive
+          export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+          
+          echo 'Starting system customization...'
+          bash /tmp/customize-system.sh
+          
+          echo 'Base customization completed!'
+        "
+        
+    - name: 🧠 Install AI/ML frameworks
+      run: |
+        echo "Installing AI/ML packages..."
+        sudo chroot iso-extract/custom-root /bin/bash -c "
+          export DEBIAN_FRONTEND=noninteractive
+          export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+          
+          echo 'Installing AI/ML frameworks...'
+          bash /tmp/install-ai-packages.sh
+          
+          echo 'AI/ML installation completed!'
+        "
+        
+    - name: 👤 Setup user environment
+      run: |
+        echo "Setting up user environment templates..."
+        sudo chroot iso-extract/custom-root /bin/bash -c "
+          export DEBIAN_FRONTEND=noninteractive
+          
+          # Copy user templates
+          cp /tmp/templates/setup-ai-env.sh /etc/skel/
+          cp /tmp/templates/start-jupyter.sh /etc/skel/
+          mkdir -p /etc/skel/.config/autostart
+          cp /tmp/templates/ai-first-setup.desktop /etc/skel/.config/autostart/
+          
+          # Set permissions
+          chmod +x /etc/skel/setup-ai-env.sh
+          chmod +x /etc/skel/start-jupyter.sh
+          
+          echo 'User environment setup completed!'
+        "
+        
+    - name: 🧹 Clean up filesystem
+      run: |
+        echo "Cleaning up chroot environment..."
+        sudo chroot iso-extract/custom-root /bin/bash -c "
+          # Remove build artifacts
+          rm -rf /tmp/*
+          rm -rf /var/tmp/*
+          
+          # Clean package cache
+          apt-get autoremove -y
+          apt-get autoclean
+          rm -rf /var/lib/apt/lists/*
+          
+          # Clean logs
+          find /var/log -type f -delete
+          
+          # Remove resolv.conf
+          rm -f /etc/resolv.conf
+          
+          echo 'Cleanup completed!'
+        "
+        
+    - name: 📦 Rebuild filesystem
+      run: |
+        echo "Creating new filesystem.squashfs..."
+        cd iso-extract
+        
+        # Update filesystem size
+        sudo du -sx --block-size=1 custom-root | cut -f1 > casper/filesystem.size
+        
+        # Create new squashfs
+        sudo rm -f casper/filesystem.squashfs
+        sudo mksquashfs custom-root casper/filesystem.squashfs \
+          -comp xz -b 1M -Xdict-size 100% \
+          -progress -mem 2G
+          
+        echo "Filesystem rebuilt successfully!"
+        
+    - name: 🔥 Generate custom ISO
+      run: |
+        echo "Generating final ISO..."
+        cd iso-extract
+        
+        # Update ISO metadata
+        sudo sed -i "s/Pop!_OS/${ISO_NAME}/g" README.diskdefines || true
+        sudo sed -i "s/Pop!_OS/${ISO_NAME}/g" .disk/info || true
+        
+        # Create bootable ISO
+        sudo xorriso -as mkisofs \
+          -r -V "${ISO_NAME}" \
+          -o ../pop-os-ai-ml-custom-$(date +%Y%m%d).iso \
+          -J -l -joliet-long \
+          -cache-inodes \
+          -iso-level 3 \
+          -b isolinux/isolinux.bin \
+          -c isolinux/boot.cat \
+          -no-emul-boot \
+          -boot-load-size 4 \
+          -boot-info-table \
+          -eltorito-alt-boot \
+          -e boot/grub/efi.img \
+          -no-emul-boot \
+          -isohybrid-gpt-basdat \
+          .
+          
+        cd ..
+        echo "ISO generation completed!"
+        
+    - name: 📋 Generate checksums
+      run: |
+        echo "Generating checksums..."
+        ls -lh pop-os-ai-ml-custom-*.iso
+        
+        for iso in pop-os-ai-ml-custom-*.iso; do
+          sha256sum "$iso" > "$iso.sha256"
+          md5sum "$iso" > "$iso.md5"
+        done
+        
+        echo "=== Final ISO Information ==="
+        ls -lh pop-os-ai-ml-custom-*
+        
+    - name: 📤 Upload ISO artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: pop-os-ai-ml-iso-${{ env.BUILD_DATE }}
+        path: |
+          pop-os-ai-ml-custom-*.iso
+          pop-os-ai-ml-custom-*.sha256
+          pop-os-ai-ml-custom-*.md5
+        retention-days: 30
+        compression-level: 0  # ISO ya está comprimido
+        
+    - name: 🎉 Build summary
+      run: |
+        echo "=== 🎉 BUILD COMPLETED SUCCESSFULLY! ==="
+        echo "📦 Artifact name: pop-os-ai-ml-iso-${{ env.BUILD_DATE }}"
+        echo "📊 ISO size: $(ls -lh pop-os-ai-ml-custom-*.iso | awk '{print $5}')"
+        echo "⏱️  Build time: ${{ steps.build-iso.duration }}"
+        echo "🔗 Download from: Actions → Artifacts"
+        echo "=================================="
